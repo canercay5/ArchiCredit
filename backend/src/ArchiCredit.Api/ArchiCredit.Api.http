@@ -1,0 +1,6 @@
+@ArchiCredit.Api_HostAddress = http://localhost:5111
+
+GET {{ArchiCredit.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
