@@ -23,28 +23,7 @@ public class CustomerService(IAppDbContext db) : ICustomerService
         return MapToDto(customer);
     }
 
-    public async Task<CustomerDto> CreateAsync(CreateCustomerDto dto)
-    {
-        var exists = await db.Customers.AnyAsync(c => c.NationalId == dto.NationalId);
-        if (exists)
-            throw new BusinessRuleException($"A customer with NationalId '{dto.NationalId}' already exists.");
-
-        var customer = new Customer
-        {
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            NationalId = dto.NationalId,
-            Email = dto.Email,
-            PhoneNumber = dto.PhoneNumber,
-            DateOfBirth = dto.DateOfBirth
-        };
-
-        db.Customers.Add(customer);
-        await db.SaveChangesAsync();
-        return MapToDto(customer);
-    }
-
-    public async Task<CustomerDto> UpdateAsync(Guid id, UpdateCustomerDto dto)
+public async Task<CustomerDto> UpdateAsync(Guid id, UpdateCustomerDto dto)
     {
         var customer = await db.Customers.FindAsync(id)
             ?? throw new NotFoundException(nameof(Customer), id);

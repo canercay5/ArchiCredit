@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { parseApiError } from '../../utils/apiError';
+import { computePreview } from '../../utils/loanCalculator';
 import type { Loan, Installment, Payment } from '../../types';
 import { InstallmentStatus, LoanStatus } from '../../types';
 
@@ -15,6 +17,7 @@ export default function LoanDetailPage() {
   const [error, setError] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [showPreviewSchedule, setShowPreviewSchedule] = useState(false);
 
   const load = async () => {
     const lRes = await api.get<Loan>(`/loans/${id}`);
@@ -27,6 +30,11 @@ export default function LoanDetailPage() {
 
   useEffect(() => { if (id) load(); }, [id]);
 
+  const preview = useMemo(() => {
+    if (!loan || loan.status !== LoanStatus.Pending) return null;
+    return computePreview(loan.principalAmount, loan.monthlyProfitRate, loan.termMonths);
+  }, [loan]);
+
   const handlePay = async (installment: Installment) => {
     setPayingId(installment.id);
     setError('');
@@ -35,8 +43,8 @@ export default function LoanDetailPage() {
       const { data } = await api.post<Payment>('/payments', { installmentId: installment.id, amount: installment.amount });
       setPayResult(data);
       load();
-    } catch (err: any) {
-      setError(err.response?.data?.title || 'Ödeme başarısız');
+    } catch (err) {
+      setError(parseApiError(err));
     } finally {
       setPayingId(null);
     }
@@ -46,7 +54,7 @@ export default function LoanDetailPage() {
     try {
       await api.post(`/loans/${id}/approve`, {});
       load();
-    } catch (err: any) { setError(err.response?.data?.title || 'Onaylama başarısız'); }
+    } catch (err) { setError(parseApiError(err)); }
   };
 
   const handleReject = async () => {
@@ -54,7 +62,7 @@ export default function LoanDetailPage() {
       await api.post(`/loans/${id}/reject`, { reason: rejectReason });
       setShowReject(false);
       load();
-    } catch (err: any) { setError(err.response?.data?.title || 'Red başarısız'); }
+    } catch (err) { setError(parseApiError(err)); }
   };
 
   if (!loan) return <p>Yükleniyor...</p>;
@@ -75,6 +83,57 @@ export default function LoanDetailPage() {
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: '#e65100', marginBottom: 12 }}>⏳ Bu başvuru onay bekliyor.</p>
               {error && <p style={{ color: '#c62828', fontSize: 14 }}>{error}</p>}
+
+              {preview && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                    {[
+                      ['Aylık Kar Payı Oranı', `%${loan!.monthlyProfitRate}`, '#1565c0'],
+                      ['Aylık Taksit', `₺${preview.monthlyPayment.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, '#2e7d32'],
+                      ['Toplam Geri Ödeme', `₺${preview.totalRepayment.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, '#e65100'],
+                    ].map(([label, value, color]) => (
+                      <div key={label} style={{ background: '#fff3e0', borderRadius: 6, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>{label}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <span style={{ fontSize: 13, color: '#666' }}>
+                      Toplam kar payı maliyeti: <strong>₺{preview.totalProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</strong>
+                    </span>
+                    <button type="button" onClick={() => setShowPreviewSchedule(s => !s)}
+                      style={{ background: 'none', border: '1px solid #e65100', color: '#e65100', padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}>
+                      {showPreviewSchedule ? 'Planı Gizle' : 'Taksit Planını Gör'}
+                    </button>
+                  </div>
+                  {showPreviewSchedule && (
+                    <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: 6, marginBottom: 10 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead style={{ position: 'sticky', top: 0, background: '#fff3e0' }}>
+                          <tr>
+                            {['No', 'Taksit Tutarı', 'Anapara', 'Kar Payı', 'Kalan Bakiye'].map(h => (
+                              <th key={h} style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #ddd' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.schedule.map(row => (
+                            <tr key={row.no} style={{ borderBottom: '1px solid #f0f0f0', background: row.no % 2 === 0 ? '#fafafa' : '#fff' }}>
+                              <td style={schedTd}>{row.no}</td>
+                              <td style={schedTd}>₺{row.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                              <td style={schedTd}>₺{row.principal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ ...schedTd, color: '#e65100' }}>₺{row.profit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                              <td style={schedTd}>₺{row.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button onClick={handleApprove} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}>✓ Başvuruyu Onayla</button>
                 <button onClick={() => setShowReject(!showReject)} style={{ background: '#c62828', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}>✗ Reddet</button>
@@ -206,3 +265,4 @@ const installmentBadge = (s: string): React.CSSProperties => ({
 const card: React.CSSProperties = { background: '#fff', borderRadius: 8, padding: 20, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.1)' };
 const th: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 13, fontWeight: 600 };
 const td: React.CSSProperties = { padding: '10px 12px', fontSize: 14 };
+const schedTd: React.CSSProperties = { padding: '6px 10px', textAlign: 'right', fontSize: 13 };

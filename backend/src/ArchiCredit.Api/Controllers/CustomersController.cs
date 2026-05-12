@@ -2,7 +2,6 @@ using ArchiCredit.Api.Extensions;
 using ArchiCredit.Application.DTOs.Customer;
 using ArchiCredit.Application.DTOs.Summary;
 using ArchiCredit.Application.Interfaces;
-using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,8 +12,7 @@ namespace ArchiCredit.Api.Controllers;
 [Authorize]
 public class CustomersController(
     ICustomerService customerService,
-    ICustomerSummaryService summaryService,
-    IValidator<CreateCustomerDto> createValidator) : ControllerBase
+    ICustomerSummaryService summaryService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Admin")]
@@ -30,19 +28,7 @@ public class CustomersController(
         return Ok(await customerService.GetByIdAsync(id));
     }
 
-    [HttpPost]
-    [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<CustomerDto>> Create([FromBody] CreateCustomerDto dto)
-    {
-        var validation = await createValidator.ValidateAsync(dto);
-        if (!validation.IsValid)
-            return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
-
-        var result = await customerService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-    }
-
-    [HttpPut("{id:guid}")]
+[HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CustomerDto>> Update(Guid id, [FromBody] UpdateCustomerDto dto)
         => Ok(await customerService.UpdateAsync(id, dto));

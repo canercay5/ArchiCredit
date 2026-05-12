@@ -22,7 +22,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {isAdmin ? (
           <>
             <Link to="/customers" style={navLink}>Müşteriler</Link>
-            <Link to="/loans" style={navLink}>Krediler</Link>
+            <Link to="/loans" style={navLink}>Finansmanlar</Link>
             <Link to="/payments" style={navLink}>Ödemeler</Link>
           </>
         ) : (

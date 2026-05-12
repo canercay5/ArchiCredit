@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
+import { parseApiError } from '../../utils/apiError';
 import type { Customer, CustomerSummary, UpdateCustomerDto, Loan } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,6 +11,7 @@ export default function CustomerDetailPage() {
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [editMode, setEditMode] = useState(false);
+  const [updateError, setUpdateError] = useState('');
   const [form, setForm] = useState<UpdateCustomerDto>({ firstName: '', lastName: '', email: '', phoneNumber: '', dateOfBirth: '' });
   const { isAdmin } = useAuth();
 
@@ -29,9 +31,14 @@ export default function CustomerDetailPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.put(`/customers/${id}`, form);
-    setEditMode(false);
-    load();
+    setUpdateError('');
+    try {
+      await api.put(`/customers/${id}`, form);
+      setEditMode(false);
+      load();
+    } catch (err) {
+      setUpdateError(parseApiError(err));
+    }
   };
 
   if (!customer) return <p>Yükleniyor...</p>;
@@ -52,6 +59,7 @@ export default function CustomerDetailPage() {
           </div>
           {editMode ? (
             <form onSubmit={handleUpdate}>
+              {updateError && <p style={{ color: '#c62828', fontSize: 14, marginBottom: 10 }}>{updateError}</p>}
               {(['firstName', 'lastName', 'email', 'phoneNumber'] as const).map(f => (
                 <div key={f} style={{ marginBottom: 10 }}>
                   <label style={lbl}>{fLabel(f)}</label>

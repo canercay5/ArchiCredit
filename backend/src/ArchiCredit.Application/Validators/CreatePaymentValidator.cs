@@ -7,7 +7,9 @@ public class CreatePaymentValidator : AbstractValidator<CreatePaymentDto>
 {
     public CreatePaymentValidator()
     {
-        RuleFor(x => x.InstallmentId).NotEmpty();
-        RuleFor(x => x.Amount).GreaterThan(0);
+        RuleFor(x => x.InstallmentId)
+            .NotEmpty().WithMessage("Taksit ID zorunludur.");
+        RuleFor(x => x.Amount)
+            .GreaterThan(0).WithMessage("Ödeme tutarı 0'dan büyük olmalıdır.");
     }
 }

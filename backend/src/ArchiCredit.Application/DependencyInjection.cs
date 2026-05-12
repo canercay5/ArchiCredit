@@ -18,7 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddSingleton<IProfitRateService, RateTableService>();
 
-        services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
+        services.AddValidatorsFromAssemblyContaining<CreateLoanValidator>();
 
         return services;
     }

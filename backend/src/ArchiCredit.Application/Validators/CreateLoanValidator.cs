@@ -7,9 +7,15 @@ public class CreateLoanValidator : AbstractValidator<CreateLoanDto>
 {
     public CreateLoanValidator()
     {
-        RuleFor(x => x.CustomerId).NotEmpty();
-        RuleFor(x => x.PrincipalAmount).GreaterThan(0).LessThanOrEqualTo(10_000_000);
-        RuleFor(x => x.TermMonths).InclusiveBetween(1, 360);
-        RuleFor(x => x.StartDate).GreaterThanOrEqualTo(DateTime.Today.AddDays(-1));
+        RuleFor(x => x.CustomerId)
+            .NotEmpty().WithMessage("Müşteri ID zorunludur.");
+        RuleFor(x => x.PrincipalAmount)
+            .GreaterThan(0).WithMessage("Tutar 0'dan büyük olmalıdır.")
+            .LessThanOrEqualTo(10_000_000).WithMessage("Tutar 10.000.000 ₺'yi geçemez.");
+        RuleFor(x => x.TermMonths)
+            .InclusiveBetween(1, 360).WithMessage("Vade 1 ile 360 ay arasında olmalıdır.");
+        RuleFor(x => x.StartDate)
+            .GreaterThanOrEqualTo(DateTime.Today.AddDays(-1))
+            .WithMessage("Başlangıç tarihi geçmiş bir tarih olamaz.");
     }
 }

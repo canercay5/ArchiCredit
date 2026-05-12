@@ -9,15 +9,6 @@ export interface Customer {
   createdAt: string;
 }
 
-export interface CreateCustomerDto {
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  email: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-}
-
 export interface UpdateCustomerDto {
   firstName: string;
   lastName: string;

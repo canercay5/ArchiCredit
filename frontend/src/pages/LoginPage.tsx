@@ -67,12 +67,13 @@ export default function LoginPage() {
             <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>Kullanıcı Adı</label>
             <input value={username} onChange={e => setUsername(e.target.value)}
               style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
-              placeholder={tab === 'admin' ? 'admin' : 'kullanici_adi'} required />
+              placeholder={tab === 'admin' ? 'balcicek' : 'erbakan'} required />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14 }}>Şifre</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+              placeholder={'******'}
               required />
           </div>
           {error && <p style={{ color: '#d32f2f', marginBottom: 12, fontSize: 14 }}>{error}</p>}

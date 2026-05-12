@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { parseApiError } from '../../utils/apiError';
+import { computePreview } from '../../utils/loanCalculator';
+import type { LoanPreview } from '../../utils/loanCalculator';
 import type { Loan, CreateLoanDto } from '../../types';
 import { LoanType, LoanStatus } from '../../types';
 
@@ -16,9 +19,15 @@ export default function LoansPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<CreateLoanDto>(emptyForm());
   const [suggestedRate, setSuggestedRate] = useState<number | null>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
   const [error, setError] = useState('');
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  const preview = useMemo<LoanPreview | null>(() => {
+    if (suggestedRate === null || form.principalAmount <= 0) return null;
+    return computePreview(form.principalAmount, suggestedRate, form.termMonths);
+  }, [form.principalAmount, form.termMonths, suggestedRate]);
 
   const load = async () => {
     const { data } = await api.get<Loan[]>('/loans');
@@ -33,9 +42,7 @@ export default function LoansPage() {
   };
 
   useEffect(() => {
-    if (!isAdmin && auth?.customerId) {
-      setForm(emptyForm(auth.customerId));
-    }
+    if (!isAdmin && auth?.customerId) setForm(emptyForm(auth.customerId));
     load();
   }, []);
 
@@ -50,10 +57,10 @@ export default function LoansPage() {
       await api.post('/loans', form);
       setForm(emptyForm(auth?.customerId ?? ''));
       setShowForm(false);
+      setShowSchedule(false);
       load();
-    } catch (err: any) {
-      const msg = err.response?.data;
-      setError(Array.isArray(msg) ? msg.join(' ') : msg?.title || 'Başvuru başarısız');
+    } catch (err) {
+      setError(parseApiError(err));
     }
   };
 
@@ -61,8 +68,8 @@ export default function LoansPage() {
     try {
       await api.post(`/loans/${id}/approve`, {});
       load();
-    } catch (err: any) {
-      alert(err.response?.data?.title || 'Onaylama başarısız');
+    } catch (err) {
+      alert(parseApiError(err));
     }
   };
 
@@ -72,8 +79,8 @@ export default function LoansPage() {
       setRejectId(null);
       setRejectReason('');
       load();
-    } catch (err: any) {
-      alert(err.response?.data?.title || 'Reddetme başarısız');
+    } catch (err) {
+      alert(parseApiError(err));
     }
   };
 
@@ -85,7 +92,7 @@ export default function LoansPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h2 style={{ margin: 0 }}>{isAdmin ? 'Tüm Krediler' : 'Finansmanlarım'}</h2>
         {!isAdmin && (
-          <button onClick={() => setShowForm(!showForm)} style={btnPrimary}>
+          <button onClick={() => { setShowForm(!showForm); setShowSchedule(false); }} style={btnPrimary}>
             {showForm ? 'İptal' : '+ Yeni Başvuru'}
           </button>
         )}
@@ -97,36 +104,85 @@ export default function LoansPage() {
           <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
             Başvurunuz admin onayına gönderilecek. Kredi skoru 600 ve üzeri olmalıdır.
           </p>
-          {suggestedRate !== null && (
-            <div style={{ background: '#e8f5e9', padding: '10px 14px', borderRadius: 6, marginBottom: 12, fontSize: 13, color: '#2e7d32', fontWeight: 600 }}>
-              📊 Önerilen aylık kar payı oranı: %{suggestedRate}
+
+          {error && <p style={{ color: '#c62828', fontSize: 14, marginBottom: 12 }}>{error}</p>}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={lbl}>Finansman Türü</label>
+                <select style={inp} value={form.loanType} onChange={e => setForm({ ...form, loanType: +e.target.value as LoanType })}>
+                  <option value={LoanType.Personal}>İhtiyaç Finansmanı</option>
+                  <option value={LoanType.Education}>Eğitim Finansmanı</option>
+                  <option value={LoanType.Vehicle}>Taşıt Finansmanı</option>
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Tutar (₺)</label>
+                <input type="number" style={inp} value={form.principalAmount || ''} onChange={e => setForm({ ...form, principalAmount: +e.target.value })} required />
+              </div>
+              <div>
+                <label style={lbl}>Vade (Ay)</label>
+                <input type="number" style={inp} value={form.termMonths} onChange={e => setForm({ ...form, termMonths: +e.target.value })} required />
+              </div>
+              <div>
+                <label style={lbl}>Başlangıç Tarihi</label>
+                <input type="date" style={inp} value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} required />
+              </div>
             </div>
-          )}
-          {error && <p style={{ color: 'red', fontSize: 14 }}>{error}</p>}
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={lbl}>Finansman Türü</label>
-              <select style={inp} value={form.loanType} onChange={e => setForm({ ...form, loanType: +e.target.value as LoanType })}>
-                <option value={LoanType.Personal}>İhtiyaç Finansmanı</option>
-                <option value={LoanType.Education}>Eğitim Finansmanı</option>
-                <option value={LoanType.Vehicle}>Taşıt Finansmanı</option>
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Tutar (₺)</label>
-              <input type="number" style={inp} value={form.principalAmount || ''} onChange={e => setForm({ ...form, principalAmount: +e.target.value })} required />
-            </div>
-            <div>
-              <label style={lbl}>Vade (Ay)</label>
-              <input type="number" style={inp} value={form.termMonths} onChange={e => setForm({ ...form, termMonths: +e.target.value })} required />
-            </div>
-            <div>
-              <label style={lbl}>Başlangıç Tarihi</label>
-              <input type="date" style={inp} value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} required />
-            </div>
-            <div style={{ gridColumn: '1/-1' }}>
-              <button type="submit" style={btnPrimary}>Başvuruyu Gönder</button>
-            </div>
+
+            {preview && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                  {[
+                    ['Aylık Kar Payı Oranı', `%${suggestedRate}`, '#1565c0'],
+                    ['Aylık Taksit', `₺${preview.monthlyPayment.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, '#2e7d32'],
+                    ['Toplam Geri Ödeme', `₺${preview.totalRepayment.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, '#e65100'],
+                  ].map(([label, value, color]) => (
+                    <div key={label} style={{ background: '#f5f5f5', borderRadius: 6, padding: '10px 14px' }}>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 13, color: '#666' }}>
+                    Toplam kar payı maliyeti: <strong>₺{preview.totalProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</strong>
+                  </span>
+                  <button type="button" onClick={() => setShowSchedule(s => !s)}
+                    style={{ background: 'none', border: '1px solid #1a237e', color: '#1a237e', padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}>
+                    {showSchedule ? 'Planı Gizle' : 'Taksit Planını Gör'}
+                  </button>
+                </div>
+
+                {showSchedule && (
+                  <div style={{ marginTop: 12, maxHeight: 320, overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: 6 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead style={{ position: 'sticky', top: 0, background: '#f0f4ff' }}>
+                        <tr>
+                          {['No', 'Taksit Tutarı', 'Anapara', 'Kar Payı', 'Kalan Bakiye'].map(h => (
+                            <th key={h} style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #ddd' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preview.schedule.map(row => (
+                          <tr key={row.no} style={{ borderBottom: '1px solid #f0f0f0', background: row.no % 2 === 0 ? '#fafafa' : '#fff' }}>
+                            <td style={schedTd}>{row.no}</td>
+                            <td style={schedTd}>₺{row.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                            <td style={schedTd}>₺{row.principal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                            <td style={{ ...schedTd, color: '#e65100' }}>₺{row.profit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                            <td style={schedTd}>₺{row.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button type="submit" style={btnPrimary}>Başvuruyu Gönder</button>
           </form>
         </div>
       )}
@@ -231,3 +287,4 @@ const lbl: React.CSSProperties = { display: 'block', marginBottom: 4, fontSize: 
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 4, fontSize: 14, boxSizing: 'border-box' };
 const th: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontSize: 13, fontWeight: 600 };
 const td: React.CSSProperties = { padding: '10px 12px', fontSize: 14 };
+const schedTd: React.CSSProperties = { padding: '6px 10px', textAlign: 'right', fontSize: 13 };

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { parseApiError } from '../utils/apiError';
 import type { AuthResult, RegisterCustomerDto } from '../types';
 
 const emptyForm = (): RegisterCustomerDto => ({
@@ -28,9 +29,8 @@ export default function RegisterPage() {
       const { data } = await api.post<AuthResult>('/auth/register-customer', form);
       login(data);
       navigate('/loans');
-    } catch (err: any) {
-      const msg = err.response?.data;
-      setError(Array.isArray(msg) ? msg.join(' ') : msg?.title || 'Kayıt başarısız.');
+    } catch (err) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }

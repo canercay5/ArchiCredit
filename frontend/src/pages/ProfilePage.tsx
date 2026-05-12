@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { parseApiError } from '../utils/apiError';
 import type { Customer, UpdateCustomerProfileDto } from '../types';
 
 export default function ProfilePage() {
@@ -31,8 +32,8 @@ export default function ProfilePage() {
       setSuccess(true);
       setEditMode(false);
       load();
-    } catch (err: any) {
-      setError(err.response?.data?.title || 'Güncelleme başarısız.');
+    } catch (err) {
+      setError(parseApiError(err));
     }
   };
 

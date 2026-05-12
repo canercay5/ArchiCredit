@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { parseApiError } from '../utils/apiError';
 import type { ResetPasswordDto } from '../types';
 
 export default function ForgotPasswordPage() {
@@ -20,9 +21,8 @@ export default function ForgotPasswordPage() {
     try {
       await api.post('/auth/reset-password', form);
       setSuccess(true);
-    } catch (err: any) {
-      const msg = err.response?.data;
-      setError(Array.isArray(msg) ? msg.join(' ') : msg?.title || 'İşlem başarısız.');
+    } catch (err) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
