@@ -31,9 +31,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasKey(l => l.Id);
             e.Property(l => l.PrincipalAmount).HasColumnType("decimal(18,2)").IsRequired();
-            e.Property(l => l.InterestRate).HasColumnType("decimal(5,2)").IsRequired();
+            e.Property(l => l.MonthlyProfitRate).HasColumnType("decimal(5,2)").IsRequired();
             e.Property(l => l.MonthlyInstallmentAmount).HasColumnType("decimal(18,2)");
             e.Property(l => l.TotalRepayment).HasColumnType("decimal(18,2)");
+            e.Property(l => l.RejectionReason).HasMaxLength(500);
             e.HasOne(l => l.Customer)
              .WithMany(c => c.Loans)
              .HasForeignKey(l => l.CustomerId)
@@ -45,7 +46,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(i => i.Id);
             e.Property(i => i.Amount).HasColumnType("decimal(18,2)").IsRequired();
             e.Property(i => i.PrincipalPortion).HasColumnType("decimal(18,2)");
-            e.Property(i => i.InterestPortion).HasColumnType("decimal(18,2)");
+            e.Property(i => i.ProfitPortion).HasColumnType("decimal(18,2)");
             e.HasOne(i => i.Loan)
              .WithMany(l => l.Installments)
              .HasForeignKey(i => i.LoanId)
@@ -70,6 +71,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(u => u.Username).IsUnique();
             e.Property(u => u.Username).HasMaxLength(100).IsRequired();
             e.Property(u => u.PasswordHash).IsRequired();
+            e.HasOne(u => u.Customer)
+             .WithMany()
+             .HasForeignKey(u => u.CustomerId)
+             .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

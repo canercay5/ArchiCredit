@@ -2,39 +2,37 @@ namespace ArchiCredit.Application.Common;
 
 public static class InstallmentCalculator
 {
-    /// <summary>
-    /// Annuity (eşit taksit) formülü: A = P * (r*(1+r)^n) / ((1+r)^n - 1)
-    /// </summary>
-    public static decimal CalculateMonthlyPayment(decimal principal, decimal annualInterestRate, int termMonths)
+    // Anüite formülü: A = P * (r*(1+r)^n) / ((1+r)^n - 1)
+    // r: aylık kar payı oranı (% / 100)
+    public static decimal CalculateMonthlyPayment(decimal principal, decimal monthlyProfitRate, int termMonths)
     {
-        if (annualInterestRate == 0)
+        if (monthlyProfitRate == 0)
             return Math.Round(principal / termMonths, 2);
 
-        decimal r = annualInterestRate / 100m / 12m;
+        decimal r = monthlyProfitRate / 100m;
         decimal factor = (decimal)Math.Pow((double)(1 + r), termMonths);
         return Math.Round(principal * (r * factor) / (factor - 1), 2);
     }
 
-    public static List<(decimal Amount, decimal Principal, decimal Interest)> GenerateSchedule(
-        decimal principal, decimal annualInterestRate, int termMonths)
+    public static List<(decimal Amount, decimal Principal, decimal Profit)> GenerateSchedule(
+        decimal principal, decimal monthlyProfitRate, int termMonths)
     {
         var schedule = new List<(decimal, decimal, decimal)>();
-        decimal monthlyRate = annualInterestRate / 100m / 12m;
-        decimal monthlyPayment = CalculateMonthlyPayment(principal, annualInterestRate, termMonths);
+        decimal r = monthlyProfitRate / 100m;
+        decimal monthlyPayment = CalculateMonthlyPayment(principal, monthlyProfitRate, termMonths);
         decimal remainingPrincipal = principal;
 
         for (int i = 0; i < termMonths; i++)
         {
-            decimal interest = Math.Round(remainingPrincipal * monthlyRate, 2);
-            decimal principalPortion = monthlyPayment - interest;
+            decimal profit = Math.Round(remainingPrincipal * r, 2);
+            decimal principalPortion = monthlyPayment - profit;
 
-            // Last installment: adjust for rounding differences
             if (i == termMonths - 1)
                 principalPortion = remainingPrincipal;
 
-            decimal amount = principalPortion + interest;
+            decimal amount = principalPortion + profit;
             remainingPrincipal -= principalPortion;
-            schedule.Add((amount, principalPortion, interest));
+            schedule.Add((amount, principalPortion, profit));
         }
 
         return schedule;

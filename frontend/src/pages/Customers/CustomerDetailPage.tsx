@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import type { Customer, CustomerSummary, UpdateCustomerDto, Loan } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { InstallmentStatus } from '../../types';
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,7 +110,7 @@ export default function CustomerDetailPage() {
                 <tr key={l.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={td}>{l.loanTypeName}</td>
                   <td style={td}>₺{l.principalAmount.toLocaleString('tr-TR')}</td>
-                  <td style={td}>%{l.interestRate}</td>
+                  <td style={td}>%{l.monthlyProfitRate}</td>
                   <td style={td}>{l.termMonths} ay</td>
                   <td style={td}>₺{l.monthlyInstallmentAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                   <td style={td}><span style={{ ...statusBadge(l.statusName) }}>{l.statusName}</span></td>

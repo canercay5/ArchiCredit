@@ -26,10 +26,25 @@ export interface UpdateCustomerDto {
   dateOfBirth: string;
 }
 
-export enum LoanType { Personal = 1, Education = 2, Vehicle = 3 }
-export enum LoanStatus { Active = 1, Closed = 2 }
-export enum InstallmentStatus { Unpaid = 1, Paid = 2, Overdue = 3 }
-export enum PaymentStatus { Success = 1, Failed = 2 }
+export interface UpdateCustomerProfileDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+}
+
+export const LoanType = { Personal: 1, Education: 2, Vehicle: 3 } as const;
+export type LoanType = (typeof LoanType)[keyof typeof LoanType];
+
+export const LoanStatus = { Active: 1, Closed: 2, Pending: 3, Rejected: 4 } as const;
+export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];
+
+export const InstallmentStatus = { Unpaid: 1, Paid: 2, Overdue: 3 } as const;
+export type InstallmentStatus = (typeof InstallmentStatus)[keyof typeof InstallmentStatus];
+
+export const PaymentStatus = { Success: 1, Failed: 2 } as const;
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 export interface Loan {
   id: string;
@@ -38,7 +53,7 @@ export interface Loan {
   loanType: LoanType;
   loanTypeName: string;
   principalAmount: number;
-  interestRate: number;
+  monthlyProfitRate: number;
   termMonths: number;
   startDate: string;
   status: LoanStatus;
@@ -47,15 +62,34 @@ export interface Loan {
   monthlyInstallmentAmount: number;
   totalRepayment: number;
   createdAt: string;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
 }
 
 export interface CreateLoanDto {
   customerId: string;
   loanType: LoanType;
   principalAmount: number;
-  interestRate: number;
   termMonths: number;
   startDate: string;
+}
+
+export interface RegisterCustomerDto {
+  firstName: string;
+  lastName: string;
+  nationalId: string;
+  email: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  username: string;
+  password: string;
+}
+
+export interface ResetPasswordDto {
+  username: string;
+  nationalId: string;
+  newPassword: string;
 }
 
 export interface Installment {
@@ -64,7 +98,7 @@ export interface Installment {
   installmentNumber: number;
   amount: number;
   principalPortion: number;
-  interestPortion: number;
+  profitPortion: number;
   dueDate: string;
   status: InstallmentStatus;
   statusName: string;

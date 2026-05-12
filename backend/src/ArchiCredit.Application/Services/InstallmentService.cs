@@ -63,7 +63,7 @@ public class InstallmentService(IAppDbContext db) : IInstallmentService
         InstallmentNumber = i.InstallmentNumber,
         Amount = i.Amount,
         PrincipalPortion = i.PrincipalPortion,
-        InterestPortion = i.InterestPortion,
+        ProfitPortion = i.ProfitPortion,
         DueDate = i.DueDate,
         Status = i.Status,
         StatusName = i.Status.ToString(),

@@ -1,3 +1,4 @@
+using ArchiCredit.Api.Extensions;
 using ArchiCredit.Application.DTOs.Payment;
 using ArchiCredit.Application.Interfaces;
 using FluentValidation;
@@ -11,9 +12,12 @@ namespace ArchiCredit.Api.Controllers;
 [Authorize]
 public class PaymentsController(
     IPaymentService paymentService,
+    IInstallmentService installmentService,
+    ILoanService loanService,
     IValidator<CreatePaymentDto> createValidator) : ControllerBase
 {
     [HttpGet("payments")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<PaymentDto>>> GetAll()
         => Ok(await paymentService.GetAllAsync());
 
@@ -31,6 +35,14 @@ public class PaymentsController(
         var validation = await createValidator.ValidateAsync(dto);
         if (!validation.IsValid)
             return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
+
+        if (!User.IsAdmin())
+        {
+            var installment = await installmentService.GetByIdAsync(dto.InstallmentId);
+            var loan = await loanService.GetByIdAsync(installment.LoanId);
+            if (loan.CustomerId != User.GetCustomerId())
+                return Forbid();
+        }
 
         var result = await paymentService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetByInstallment), new { installmentId = result.InstallmentId }, result);

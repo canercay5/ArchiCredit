@@ -8,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ArchiCredit.Application.Services;
 
-public class LoanService(IAppDbContext db, ICreditScoreService creditScoreService) : ILoanService
+public class LoanService(
+    IAppDbContext db,
+    ICreditScoreService creditScoreService,
+    IProfitRateService profitRateService) : ILoanService
 {
     public async Task<IEnumerable<LoanDto>> GetAllAsync()
     {
@@ -41,53 +44,96 @@ public class LoanService(IAppDbContext db, ICreditScoreService creditScoreServic
         return MapToDto(loan);
     }
 
-    public async Task<LoanDto> CreateAsync(CreateLoanDto dto)
+    public async Task<LoanDto> CreateAsync(CreateLoanDto dto, Guid requestingCustomerId)
     {
+        if (dto.CustomerId != requestingCustomerId)
+            throw new BusinessRuleException("You can only submit loan applications for your own account.");
+
         var customer = await db.Customers.FindAsync(dto.CustomerId)
             ?? throw new NotFoundException(nameof(Customer), dto.CustomerId);
 
-        var creditScore = await creditScoreService.GetScoreAsync(customer.NationalId);
-        if (creditScore < 600)
-            throw new BusinessRuleException($"Loan application rejected. Credit score {creditScore} is below the minimum threshold of 600.");
-
-        var monthlyPayment = InstallmentCalculator.CalculateMonthlyPayment(
-            dto.PrincipalAmount, dto.InterestRate, dto.TermMonths);
+        var suggestedRate = profitRateService.GetMonthlyRate(dto.LoanType, dto.TermMonths);
 
         var loan = new Loan
         {
             CustomerId = dto.CustomerId,
             LoanType = dto.LoanType,
             PrincipalAmount = dto.PrincipalAmount,
-            InterestRate = dto.InterestRate,
+            MonthlyProfitRate = suggestedRate,
             TermMonths = dto.TermMonths,
             StartDate = dto.StartDate,
-            CreditScore = creditScore,
-            MonthlyInstallmentAmount = monthlyPayment,
-            TotalRepayment = monthlyPayment * dto.TermMonths
+            Status = LoanStatus.Pending
         };
 
         db.Loans.Add(loan);
+        await db.SaveChangesAsync();
+
+        loan.Customer = customer;
+        return MapToDto(loan);
+    }
+
+    public async Task<LoanDto> ApproveAsync(Guid id, ApproveLoanDto dto)
+    {
+        var loan = await db.Loans
+            .Include(l => l.Customer)
+            .FirstOrDefaultAsync(l => l.Id == id)
+            ?? throw new NotFoundException(nameof(Loan), id);
+
+        if (loan.Status != LoanStatus.Pending)
+            throw new BusinessRuleException($"Only pending loans can be approved. Current status: {loan.Status}");
+
+        var customer = loan.Customer;
+        var creditScore = await creditScoreService.GetScoreAsync(customer.NationalId);
+        if (creditScore < 600)
+            throw new BusinessRuleException($"Loan application rejected. Credit score {creditScore} is below the minimum threshold of 600.");
+
+        var profitRate = dto.OverrideProfitRate ?? loan.MonthlyProfitRate;
+        var monthlyPayment = InstallmentCalculator.CalculateMonthlyPayment(
+            loan.PrincipalAmount, profitRate, loan.TermMonths);
+
+        loan.MonthlyProfitRate = profitRate;
+        loan.CreditScore = creditScore;
+        loan.MonthlyInstallmentAmount = monthlyPayment;
+        loan.TotalRepayment = monthlyPayment * loan.TermMonths;
+        loan.Status = LoanStatus.Active;
+        loan.ApprovedAt = DateTime.UtcNow;
 
         var schedule = InstallmentCalculator.GenerateSchedule(
-            dto.PrincipalAmount, dto.InterestRate, dto.TermMonths);
+            loan.PrincipalAmount, profitRate, loan.TermMonths);
 
         for (int i = 0; i < schedule.Count; i++)
         {
-            var (amount, principal, interest) = schedule[i];
+            var (amount, principal, profit) = schedule[i];
             db.Installments.Add(new Installment
             {
                 LoanId = loan.Id,
                 InstallmentNumber = i + 1,
                 Amount = amount,
                 PrincipalPortion = principal,
-                InterestPortion = interest,
-                DueDate = dto.StartDate.AddMonths(i + 1)
+                ProfitPortion = profit,
+                DueDate = loan.StartDate.AddMonths(i + 1)
             });
         }
 
         await db.SaveChangesAsync();
+        return MapToDto(loan);
+    }
 
-        loan.Customer = customer;
+    public async Task<LoanDto> RejectAsync(Guid id, RejectLoanDto dto)
+    {
+        var loan = await db.Loans
+            .Include(l => l.Customer)
+            .FirstOrDefaultAsync(l => l.Id == id)
+            ?? throw new NotFoundException(nameof(Loan), id);
+
+        if (loan.Status != LoanStatus.Pending)
+            throw new BusinessRuleException($"Only pending loans can be rejected. Current status: {loan.Status}");
+
+        loan.Status = LoanStatus.Rejected;
+        loan.RejectedAt = DateTime.UtcNow;
+        loan.RejectionReason = dto.Reason;
+
+        await db.SaveChangesAsync();
         return MapToDto(loan);
     }
 
@@ -111,7 +157,7 @@ public class LoanService(IAppDbContext db, ICreditScoreService creditScoreServic
         LoanType = l.LoanType,
         LoanTypeName = l.LoanType.ToString(),
         PrincipalAmount = l.PrincipalAmount,
-        InterestRate = l.InterestRate,
+        MonthlyProfitRate = l.MonthlyProfitRate,
         TermMonths = l.TermMonths,
         StartDate = l.StartDate,
         Status = l.Status,
@@ -119,6 +165,9 @@ public class LoanService(IAppDbContext db, ICreditScoreService creditScoreServic
         CreditScore = l.CreditScore,
         MonthlyInstallmentAmount = l.MonthlyInstallmentAmount,
         TotalRepayment = l.TotalRepayment,
-        CreatedAt = l.CreatedAt
+        CreatedAt = l.CreatedAt,
+        ApprovedAt = l.ApprovedAt,
+        RejectedAt = l.RejectedAt,
+        RejectionReason = l.RejectionReason
     };
 }

@@ -60,6 +60,22 @@ public class CustomerService(IAppDbContext db) : ICustomerService
         return MapToDto(customer);
     }
 
+    public async Task<CustomerDto> UpdateProfileAsync(Guid id, UpdateCustomerProfileDto dto)
+    {
+        var customer = await db.Customers.FindAsync(id)
+            ?? throw new NotFoundException(nameof(Customer), id);
+
+        customer.FirstName = dto.FirstName;
+        customer.LastName = dto.LastName;
+        customer.Email = dto.Email;
+        customer.PhoneNumber = dto.PhoneNumber;
+        customer.DateOfBirth = dto.DateOfBirth;
+        customer.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+        return MapToDto(customer);
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var customer = await db.Customers.FindAsync(id)

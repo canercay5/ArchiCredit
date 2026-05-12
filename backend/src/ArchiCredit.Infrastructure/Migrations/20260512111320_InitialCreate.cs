@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ArchiCredit.Infrastructure.Persistence.Migrations
+namespace ArchiCredit.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -38,14 +38,17 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                     CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LoanType = table.Column<int>(type: "int", nullable: false),
                     PrincipalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    InterestRate = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
+                    MonthlyProfitRate = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     TermMonths = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     CreditScore = table.Column<int>(type: "int", nullable: false),
                     MonthlyInstallmentAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     TotalRepayment = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RejectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RejectionReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -76,7 +79,8 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                         name: "FK_Users_Customers_CustomerId",
                         column: x => x.CustomerId,
                         principalTable: "Customers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -88,7 +92,7 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                     InstallmentNumber = table.Column<int>(type: "int", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PrincipalPortion = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    InterestPortion = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ProfitPortion = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     PaidAt = table.Column<DateTime>(type: "datetime2", nullable: true)

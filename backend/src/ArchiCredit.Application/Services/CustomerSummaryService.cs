@@ -70,7 +70,7 @@ public class CustomerSummaryService(IAppDbContext db) : ICustomerSummaryService
         InstallmentNumber = i.InstallmentNumber,
         Amount = i.Amount,
         PrincipalPortion = i.PrincipalPortion,
-        InterestPortion = i.InterestPortion,
+        ProfitPortion = i.ProfitPortion,
         DueDate = i.DueDate,
         Status = i.Status,
         StatusName = i.Status.ToString(),

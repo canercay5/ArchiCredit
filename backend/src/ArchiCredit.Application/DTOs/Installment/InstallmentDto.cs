@@ -9,7 +9,7 @@ public class InstallmentDto
     public int InstallmentNumber { get; set; }
     public decimal Amount { get; set; }
     public decimal PrincipalPortion { get; set; }
-    public decimal InterestPortion { get; set; }
+    public decimal ProfitPortion { get; set; }
     public DateTime DueDate { get; set; }
     public InstallmentStatus Status { get; set; }
     public string StatusName { get; set; } = string.Empty;

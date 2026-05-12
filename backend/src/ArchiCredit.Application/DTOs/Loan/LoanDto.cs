@@ -10,7 +10,7 @@ public class LoanDto
     public LoanType LoanType { get; set; }
     public string LoanTypeName { get; set; } = string.Empty;
     public decimal PrincipalAmount { get; set; }
-    public decimal InterestRate { get; set; }
+    public decimal MonthlyProfitRate { get; set; }
     public int TermMonths { get; set; }
     public DateTime StartDate { get; set; }
     public LoanStatus Status { get; set; }
@@ -19,4 +19,7 @@ public class LoanDto
     public decimal MonthlyInstallmentAmount { get; set; }
     public decimal TotalRepayment { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public string? RejectionReason { get; set; }
 }

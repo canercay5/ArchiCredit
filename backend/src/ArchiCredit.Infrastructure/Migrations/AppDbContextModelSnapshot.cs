@@ -4,19 +4,16 @@ using ArchiCredit.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ArchiCredit.Infrastructure.Persistence.Migrations
+namespace ArchiCredit.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260511213643_InitialCreate")]
-    partial class InitialCreate
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,9 +85,6 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                     b.Property<int>("InstallmentNumber")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("InterestPortion")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid>("LoanId")
                         .HasColumnType("uniqueidentifier");
 
@@ -98,6 +92,9 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("PrincipalPortion")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ProfitPortion")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Status")
@@ -116,6 +113,9 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -125,17 +125,24 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("InterestRate")
-                        .HasColumnType("decimal(5,2)");
-
                     b.Property<int>("LoanType")
                         .HasColumnType("int");
 
                     b.Property<decimal>("MonthlyInstallmentAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("MonthlyProfitRate")
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<decimal>("PrincipalAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -258,7 +265,8 @@ namespace ArchiCredit.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("ArchiCredit.Domain.Entities.Customer", "Customer")
                         .WithMany()
-                        .HasForeignKey("CustomerId");
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Customer");
                 });

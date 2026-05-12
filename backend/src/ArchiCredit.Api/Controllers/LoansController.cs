@@ -1,3 +1,4 @@
+using ArchiCredit.Api.Extensions;
 using ArchiCredit.Application.DTOs.Loan;
 using ArchiCredit.Application.Interfaces;
 using FluentValidation;
@@ -15,22 +16,50 @@ public class LoansController(
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LoanDto>>> GetAll()
-        => Ok(await loanService.GetAllAsync());
+    {
+        if (User.IsAdmin())
+            return Ok(await loanService.GetAllAsync());
+
+        var customerId = User.GetCustomerId();
+        if (customerId == Guid.Empty)
+            return Forbid();
+
+        return Ok(await loanService.GetByCustomerIdAsync(customerId));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<LoanDto>> GetById(Guid id)
-        => Ok(await loanService.GetByIdAsync(id));
+    {
+        var loan = await loanService.GetByIdAsync(id);
+
+        if (!User.IsAdmin() && loan.CustomerId != User.GetCustomerId())
+            return Forbid();
+
+        return Ok(loan);
+    }
 
     [HttpPost]
+    [Authorize(Roles = "Customer")]
     public async Task<ActionResult<LoanDto>> Create([FromBody] CreateLoanDto dto)
     {
         var validation = await createValidator.ValidateAsync(dto);
         if (!validation.IsValid)
             return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
 
-        var result = await loanService.CreateAsync(dto);
+        var customerId = User.GetCustomerId();
+        var result = await loanService.CreateAsync(dto, customerId);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
+
+    [HttpPost("{id:guid}/approve")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<LoanDto>> Approve(Guid id, [FromBody] ApproveLoanDto dto)
+        => Ok(await loanService.ApproveAsync(id, dto));
+
+    [HttpPost("{id:guid}/reject")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<LoanDto>> Reject(Guid id, [FromBody] RejectLoanDto dto)
+        => Ok(await loanService.RejectAsync(id, dto));
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
