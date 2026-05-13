@@ -48,7 +48,13 @@ export default function RegisterPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div><label style={lbl}>Ad</label><input style={inp} value={form.firstName} onChange={set('firstName')} required /></div>
             <div><label style={lbl}>Soyad</label><input style={inp} value={form.lastName} onChange={set('lastName')} required /></div>
-            <div><label style={lbl}>TC Kimlik No (11 hane)</label><input style={inp} maxLength={11} value={form.nationalId} onChange={set('nationalId')} required /></div>
+            <div><label style={lbl}>TC Kimlik No (11 hane)</label><input style={inp} maxLength={11} value={form.nationalId}
+                        onChange={(e) => {
+                          const onlyNumbers = e.target.value.replace(/\D/g, "");
+                          setForm({ ...form, nationalId: onlyNumbers });
+                        }}
+                        required/>
+            </div>
             <div><label style={lbl}>E-posta</label><input type="email" style={inp} value={form.email} onChange={set('email')} required /></div>
             <div><label style={lbl}>Telefon</label><input style={inp} value={form.phoneNumber} onChange={set('phoneNumber')} /></div>
             <div><label style={lbl}>Doğum Tarihi</label><input type="date" style={inp} value={form.dateOfBirth} onChange={set('dateOfBirth')} required /></div>

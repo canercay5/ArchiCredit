@@ -106,7 +106,6 @@ export default function CustomerDetailPage() {
       <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>Krediler</h3>
-          <Link to={`/loans?customerId=${id}`} style={{ ...btn('#1a237e'), textDecoration: 'none' }}>+ Yeni Kredi</Link>
         </div>
         {loans.length === 0 ? <p style={{ color: '#999' }}>Kredi yok.</p> : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>

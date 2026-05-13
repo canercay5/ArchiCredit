@@ -15,7 +15,7 @@ public class AuthController(
     IValidator<ResetPasswordDto> resetPasswordValidator) : ControllerBase
 {
     [HttpPost("register")]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<AuthResultDto>> Register([FromBody] RegisterDto dto)
     {
         var result = await authService.RegisterAsync(dto);

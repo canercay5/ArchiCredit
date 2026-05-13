@@ -29,7 +29,7 @@ public class RegisterCustomerValidator : AbstractValidator<RegisterCustomerDto>
         RuleFor(x => x.Username)
             .NotEmpty().WithMessage("Kullanıcı adı zorunludur.")
             .MinimumLength(3).WithMessage("Kullanıcı adı en az 3 karakter olmalıdır.")
-            .MaximumLength(100).WithMessage("Kullanıcı adı 100 karakteri geçemez.");
+            .MaximumLength(50).WithMessage("Kullanıcı adı 50 karakteri geçemez.");
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Şifre zorunludur.")
             .MinimumLength(6).WithMessage("Şifre en az 6 karakter olmalıdır.");

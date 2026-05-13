@@ -15,7 +15,6 @@ public class InstallmentCalculatorTests
     [Fact]
     public void CalculateMonthlyPayment_WithProfitRate_IsGreaterThanPrincipalDivided()
     {
-        // %2.79 aylık kar payı oranı
         decimal result = InstallmentCalculator.CalculateMonthlyPayment(10000m, 2.79m, 12);
         Assert.True(result > 10000m / 12m);
     }

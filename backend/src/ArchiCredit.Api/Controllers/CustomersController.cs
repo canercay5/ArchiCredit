@@ -28,7 +28,7 @@ public class CustomersController(
         return Ok(await customerService.GetByIdAsync(id));
     }
 
-[HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CustomerDto>> Update(Guid id, [FromBody] UpdateCustomerDto dto)
         => Ok(await customerService.UpdateAsync(id, dto));

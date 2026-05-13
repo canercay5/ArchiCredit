@@ -3,4 +3,20 @@
 GET {{ArchiCredit.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
+### 1. Yeni Müþteri Kaydý (Register Customer)
+POST {{ArchiCredit.Api_HostAddress}}/api/auth/register-customer
+Content-Type: application/json
+
+{
+  "firstName": "Caner",
+  "lastName": "Çay",
+  "username": "cas"
+  "email": "caner@example.com",
+  "password": "Password123!",
+  "confirmPassword": "Password123!",
+  "nationalId": "12345678901",
+  "phoneNumber": "5554443322",
+  "dateOfBirth": "2000-01-01"
+}
+
 ###
